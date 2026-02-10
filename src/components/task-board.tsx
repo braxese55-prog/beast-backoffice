@@ -2,18 +2,11 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { CheckCircle, Clock, Circle, ListTodo } from 'lucide-react'
+import { CheckCircle, Clock, Circle, ListTodo, LucideIcon } from 'lucide-react'
 import type { Task } from '@/types'
 
 interface TaskBoardProps {
   tasks: Task[]
-}
-
-const statusIcons = {
-  'todo': Circle,
-  'in-progress': Clock,
-  'completed': CheckCircle
 }
 
 const statusColors = {
@@ -28,12 +21,18 @@ const priorityColors = {
   'high': 'bg-red-200 text-red-700'
 }
 
+interface TaskColumnProps {
+  title: string;
+  tasks: Task[];
+  icon: LucideIcon;
+}
+
 export function TaskBoard({ tasks }: TaskBoardProps) {
   const todo = tasks.filter(t => t.status === 'todo')
   const inProgress = tasks.filter(t => t.status === 'in-progress')
   const completed = tasks.filter(t => t.status === 'completed')
 
-  const TaskColumn = ({ title, tasks, icon: Icon }: { title: string; tasks: Task[]; icon: any }) => (
+  const TaskColumn = ({ title, tasks, icon: Icon }: TaskColumnProps) => (
     <div className="flex-1 min-w-[250px]">
       <div className="flex items-center gap-2 mb-3">
         <Icon className="h-4 w-4" />

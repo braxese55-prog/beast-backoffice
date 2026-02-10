@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Send, Paperclip, Mic, ThumbsUp, ThumbsDown, Copy, Check } from 'lucide-react'
+import { Send, Paperclip, Mic, ThumbsUp, ThumbsDown, Copy, Check, MessageSquare } from 'lucide-react'
 import type { Message } from '@/types'
 
 interface CommsCenterProps {
@@ -120,6 +120,3 @@ export function CommsCenter({ messages, onSendMessage, onFeedback }: CommsCenter
     </Card>
   )
 }
-
-// Missing import
-import { MessageSquare } from 'lucide-react'
