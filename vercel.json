@@ -4,6 +4,9 @@
   "outputDirectory": "dist",
   "framework": "nextjs",
   "env": {
+    "NEXT_PUBLIC_SUPABASE_URL": "@supabase-url",
+    "NEXT_PUBLIC_SUPABASE_ANON_KEY": "@supabase-anon-key",
+    "SUPABASE_SERVICE_ROLE_KEY": "@supabase-service-role-key",
     "OPENCLAW_GATEWAY_URL": "@openclaw-gateway-url",
     "MEMORY_API_KEY": "@memory-api-key",
     "GITHUB_TOKEN": "@github-token"
