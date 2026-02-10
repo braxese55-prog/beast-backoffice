@@ -7,7 +7,7 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const { action, sessionKey, message } = await request.json()
+  const { action, sessionKey } = await request.json()
   
   if (action === 'history' && sessionKey) {
     const history = await getSessionHistory(sessionKey)

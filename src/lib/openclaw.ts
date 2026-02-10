@@ -53,7 +53,7 @@ export async function sendMessage(sessionKey: string, message: string): Promise<
   }
 }
 
-export async function getGatewayStatus(): Promise<any> {
+export async function getGatewayStatus(): Promise<Record<string, unknown> | null> {
   try {
     const res = await fetch(`${GATEWAY_URL}/api/status`, {
       headers: { 'Content-Type': 'application/json' }

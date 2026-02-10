@@ -69,7 +69,7 @@ export function useRealtimeMessages(sessionId: string) {
 
 // Hook for system-wide events (status updates, etc)
 export function useRealtimeSystem() {
-  const [lastEvent, setLastEvent] = useState<any>(null)
+  const [lastEvent, setLastEvent] = useState<Record<string, unknown> | null>(null)
 
   useEffect(() => {
     const channel = supabase
