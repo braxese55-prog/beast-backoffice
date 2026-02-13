@@ -12,17 +12,20 @@ export async function GET(request: Request) {
   }
 
   try {
-    const history = await getSessionHistory(sessionKey)
+    const result = await getSessionHistory(sessionKey)
     
-    // Check if we got an error response
-    if ('error' in history) {
+    // Check if we got an error response (GatewayError)
+    if (result && typeof result === 'object' && 'error' in result) {
       return NextResponse.json({
-        error: history.error,
-        details: history.details,
-        gatewayUrl: history.gatewayUrl,
-        timestamp: history.timestamp
+        error: result.error,
+        details: result.details,
+        gatewayUrl: result.gatewayUrl,
+        timestamp: result.timestamp
       }, { status: 503 })
     }
+
+    // At this point, result is Message[]
+    const history = result as any[]
 
     // Transform OpenClaw messages to our Message format
     interface OpenClawMessage {
