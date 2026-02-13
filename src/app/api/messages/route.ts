@@ -1,65 +1,43 @@
-import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
+import { getSessionHistory } from '@/lib/openclaw'
 
-// Service role client for server-side operations
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false,
-    },
-  }
-)
-
-export async function POST(request: Request) {
-  try {
-    const { sessionId, role, content, metadata } = await request.json()
-
-    const { data, error } = await supabaseAdmin
-      .from('messages')
-      .insert({
-        session_id: sessionId,
-        role,
-        content,
-        metadata: metadata || {},
-      })
-      .select()
-      .single()
-
-    if (error) {
-      console.error('Supabase error:', error)
-      return NextResponse.json({ error: error.message }, { status: 500 })
-    }
-
-    return NextResponse.json({ success: true, message: data })
-  } catch (error) {
-    console.error('Error posting message:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
-  }
-}
+export const dynamic = 'force-dynamic'
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
-  const sessionId = searchParams.get('sessionId')
+  const sessionKey = searchParams.get('sessionKey')
 
-  if (!sessionId) {
-    return NextResponse.json({ error: 'sessionId required' }, { status: 400 })
+  if (!sessionKey) {
+    return NextResponse.json({ error: 'sessionKey required' }, { status: 400 })
   }
 
-  const { data, error } = await supabaseAdmin
-    .from('messages')
-    .select('*')
-    .eq('session_id', sessionId)
-    .order('created_at', { ascending: true })
+  try {
+    const history = await getSessionHistory(sessionKey)
+    
+    // Check if we got an error response
+    if ('error' in history) {
+      return NextResponse.json({
+        error: history.error,
+        details: history.details,
+        gatewayUrl: history.gatewayUrl,
+        timestamp: history.timestamp
+      }, { status: 503 })
+    }
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    // Transform OpenClaw messages to our Message format
+    const messages = history.map((msg: any) => ({
+      id: msg.timestamp?.toString() || Date.now().toString(),
+      content: msg.content,
+      sender: msg.role === 'user' ? 'user' : 'ai',
+      timestamp: new Date(msg.timestamp).toISOString()
+    }))
+
+    return NextResponse.json(messages)
+  } catch (error) {
+    console.error('Error fetching messages:', error)
+    return NextResponse.json(
+      { error: 'Failed to fetch messages' },
+      { status: 500 }
+    )
   }
-
-  return NextResponse.json(data)
 }
