@@ -106,14 +106,13 @@ export default function Dashboard() {
     setIsSending(true)
 
     try {
-      // Send to OpenClaw gateway with backoffice tag
-      const response = await fetch('/api/send-message', {
+      // Send to comms endpoint (saves to Supabase + sends webhook to OpenClaw)
+      const response = await fetch('/api/comms', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           sessionKey,
           message: content,
-          source: 'backoffice'
         })
       })
 
@@ -121,17 +120,8 @@ export default function Dashboard() {
         throw new Error('Failed to send message')
       }
 
-      // The response will come asynchronously through polling or WebSocket
-      // For now, add a placeholder response
-      setTimeout(() => {
-        const aiMessage: Message = {
-          id: (Date.now() + 1).toString(),
-          content: 'Message sent to Beast. Waiting for response...',
-          sender: 'ai',
-          timestamp: new Date().toISOString()
-        }
-        setMessages(prev => [...prev, aiMessage])
-      }, 500)
+      const result = await response.json()
+      console.log('Message sent:', result)
 
     } catch (error) {
       console.error('Error sending message:', error)
@@ -153,11 +143,11 @@ export default function Dashboard() {
     // TODO: Implement feedback storage
   }
 
-  // Poll for new messages periodically
+  // Poll for new messages from Supabase via comms endpoint
   useEffect(() => {
     const pollInterval = setInterval(async () => {
       try {
-        const response = await fetch(`/api/messages?sessionKey=${sessionKey}`)
+        const response = await fetch(`/api/comms?sessionKey=${sessionKey}`)
         if (response.ok) {
           const newMessages = await response.json()
           // Merge new messages with existing, avoiding duplicates
