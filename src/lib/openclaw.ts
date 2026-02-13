@@ -65,11 +65,31 @@ export async function getSessions(): Promise<Session[] | GatewayError> {
 }
 
 export async function getSessionHistory(sessionKey: string): Promise<Message[] | GatewayError> {
+  const url = `${GATEWAY_URL}/api/sessions/${sessionKey}/history`
+  console.log(`Fetching session history from: ${url}`)
+  
   try {
-    const res = await fetchWithTimeout(`${GATEWAY_URL}/api/sessions/${sessionKey}/history`, {
+    const res = await fetchWithTimeout(url, {
       headers: { 'Content-Type': 'application/json' }
     })
-    if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`)
+    
+    console.log(`Response status: ${res.status}`)
+    console.log(`Response content-type: ${res.headers.get('content-type')}`)
+    
+    if (!res.ok) {
+      const text = await res.text()
+      console.error(`HTTP error ${res.status}: ${text.substring(0, 200)}`)
+      throw new Error(`HTTP ${res.status}: ${res.statusText}`)
+    }
+    
+    // Check if response is JSON
+    const contentType = res.headers.get('content-type')
+    if (!contentType || !contentType.includes('application/json')) {
+      const text = await res.text()
+      console.error(`Expected JSON but got: ${contentType}. Body: ${text.substring(0, 200)}`)
+      throw new Error(`Gateway returned ${contentType || 'unknown content type'} instead of JSON`)
+    }
+    
     return res.json()
   } catch (error) {
     console.error('Error fetching history:', error)
