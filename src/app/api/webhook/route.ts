@@ -3,7 +3,14 @@ import { NextResponse } from 'next/server'
 export const dynamic = 'force-dynamic'
 
 // Store messages in memory (in production, use a database)
-const messageStore = new Map<string, any[]>()
+interface StoredMessage {
+  id: string
+  content: string
+  sender: 'user' | 'ai'
+  timestamp: string
+  metadata?: Record<string, unknown>
+}
+const messageStore = new Map<string, StoredMessage[]>()
 
 // Webhook secret for verification
 const WEBHOOK_SECRET = process.env.BACKOFFICE_WEBHOOK_SECRET || 'default-secret-change-in-production'

@@ -167,7 +167,7 @@ export default function Dashboard() {
             return [...prev, ...uniqueNew]
           })
         }
-      } catch (error) {
+      } catch {
         // Silently fail on poll errors
       }
     }, 3000) // Poll every 3 seconds
