@@ -106,13 +106,14 @@ export default function Dashboard() {
     setIsSending(true)
 
     try {
-      // Send to OpenClaw gateway
+      // Send to OpenClaw gateway with backoffice tag
       const response = await fetch('/api/send-message', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           sessionKey,
-          message: content
+          message: content,
+          source: 'backoffice'
         })
       })
 

@@ -96,6 +96,26 @@ export async function sendMessage(sessionKey: string, message: string): Promise<
   }
 }
 
+export async function sendMessageWithMetadata(
+  sessionKey: string,
+  message: string,
+  metadata: Record<string, unknown>
+): Promise<void> {
+  try {
+    await fetchWithTimeout(`${GATEWAY_URL}/api/sessions/${sessionKey}/send`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message,
+        metadata  // Include metadata/tags for routing
+      })
+    })
+  } catch (error) {
+    console.error('Error sending message with metadata:', error)
+    throw error
+  }
+}
+
 export async function getGatewayStatus(): Promise<Record<string, unknown> | GatewayError> {
   try {
     const res = await fetchWithTimeout(`${GATEWAY_URL}/api/status`, {
