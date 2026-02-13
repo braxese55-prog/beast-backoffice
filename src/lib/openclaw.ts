@@ -1,5 +1,10 @@
 // OpenClaw API client
+// For local development: http://127.0.0.1:18789
+// For Vercel deployment: Use a tunnel (ngrok) and set OPENCLAW_GATEWAY_URL env var
 const GATEWAY_URL = process.env.OPENCLAW_GATEWAY_URL || 'http://127.0.0.1:18789'
+
+// Timeout for gateway requests (in milliseconds)
+const GATEWAY_TIMEOUT = parseInt(process.env.OPENCLAW_TIMEOUT || '5000')
 
 export interface Session {
   sessionKey: string
@@ -14,35 +19,71 @@ export interface Message {
   timestamp: number
 }
 
-export async function getSessions(): Promise<Session[]> {
+export interface GatewayError {
+  error: string
+  details: string
+  gatewayUrl: string
+  timestamp: string
+}
+
+// Helper to make fetch requests with timeout
+async function fetchWithTimeout(url: string, options: RequestInit = {}): Promise<Response> {
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), GATEWAY_TIMEOUT)
+  
   try {
-    const res = await fetch(`${GATEWAY_URL}/api/sessions`, {
-      headers: { 'Content-Type': 'application/json' }
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal
     })
-    if (!res.ok) throw new Error('Failed to fetch sessions')
-    return res.json()
+    clearTimeout(timeoutId)
+    return response
   } catch (error) {
-    console.error('Error fetching sessions:', error)
-    return []
+    clearTimeout(timeoutId)
+    throw error
   }
 }
 
-export async function getSessionHistory(sessionKey: string): Promise<Message[]> {
+export async function getSessions(): Promise<Session[] | GatewayError> {
   try {
-    const res = await fetch(`${GATEWAY_URL}/api/sessions/${sessionKey}/history`, {
+    const res = await fetchWithTimeout(`${GATEWAY_URL}/api/sessions`, {
       headers: { 'Content-Type': 'application/json' }
     })
-    if (!res.ok) throw new Error('Failed to fetch history')
+    if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`)
     return res.json()
-  } catch (error) {
+  } catch (error: any) {
+    console.error('Error fetching sessions:', error)
+    // Return error object instead of throwing
+    return {
+      error: 'Gateway Unreachable',
+      details: error.message || 'Failed to connect to OpenClaw gateway',
+      gatewayUrl: GATEWAY_URL,
+      timestamp: new Date().toISOString()
+    }
+  }
+}
+
+export async function getSessionHistory(sessionKey: string): Promise<Message[] | GatewayError> {
+  try {
+    const res = await fetchWithTimeout(`${GATEWAY_URL}/api/sessions/${sessionKey}/history`, {
+      headers: { 'Content-Type': 'application/json' }
+    })
+    if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`)
+    return res.json()
+  } catch (error: any) {
     console.error('Error fetching history:', error)
-    return []
+    return {
+      error: 'Gateway Unreachable',
+      details: error.message || 'Failed to connect to OpenClaw gateway',
+      gatewayUrl: GATEWAY_URL,
+      timestamp: new Date().toISOString()
+    }
   }
 }
 
 export async function sendMessage(sessionKey: string, message: string): Promise<void> {
   try {
-    await fetch(`${GATEWAY_URL}/api/sessions/${sessionKey}/send`, {
+    await fetchWithTimeout(`${GATEWAY_URL}/api/sessions/${sessionKey}/send`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ message })
@@ -53,15 +94,20 @@ export async function sendMessage(sessionKey: string, message: string): Promise<
   }
 }
 
-export async function getGatewayStatus(): Promise<Record<string, unknown> | null> {
+export async function getGatewayStatus(): Promise<Record<string, unknown> | GatewayError> {
   try {
-    const res = await fetch(`${GATEWAY_URL}/api/status`, {
+    const res = await fetchWithTimeout(`${GATEWAY_URL}/api/status`, {
       headers: { 'Content-Type': 'application/json' }
     })
-    if (!res.ok) throw new Error('Failed to fetch status')
+    if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`)
     return res.json()
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error fetching status:', error)
-    return null
+    return {
+      error: 'Gateway Unreachable',
+      details: error.message || 'Failed to connect to OpenClaw gateway. If deploying to Vercel, you need to expose your local gateway via a tunnel (ngrok) and set OPENCLAW_GATEWAY_URL.',
+      gatewayUrl: GATEWAY_URL,
+      timestamp: new Date().toISOString()
+    }
   }
 }
