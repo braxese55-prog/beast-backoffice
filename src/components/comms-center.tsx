@@ -12,9 +12,10 @@ interface CommsCenterProps {
   messages: Message[]
   onSendMessage: (content: string) => void
   onFeedback: (messageId: string, feedback: 'up' | 'down') => void
+  isSending?: boolean
 }
 
-export function CommsCenter({ messages, onSendMessage, onFeedback }: CommsCenterProps) {
+export function CommsCenter({ messages, onSendMessage, onFeedback, isSending }: CommsCenterProps) {
   const [input, setInput] = useState('')
   const [copiedId, setCopiedId] = useState<string | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -112,8 +113,12 @@ export function CommsCenter({ messages, onSendMessage, onFeedback }: CommsCenter
             onKeyDown={(e) => e.key === 'Enter' && handleSend()}
             className="flex-1"
           />
-          <Button onClick={handleSend}>
-            <Send className="h-4 w-4" />
+          <Button onClick={handleSend} disabled={isSending}>
+            {isSending ? (
+              <span className="animate-spin">⏳</span>
+            ) : (
+              <Send className="h-4 w-4" />
+            )}
           </Button>
         </div>
       </CardContent>

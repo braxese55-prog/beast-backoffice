@@ -1,5 +1,6 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { StatusPanel } from '@/components/status-panel'
 import { TokenTracker } from '@/components/token-tracker'
@@ -50,6 +51,19 @@ const mockMessages: Message[] = [
   }
 ]
 
+// Generate or retrieve session key for this conversation
+const getSessionKey = () => {
+  if (typeof window !== 'undefined') {
+    let key = localStorage.getItem('backoffice-session-key')
+    if (!key) {
+      key = `backoffice-${Date.now()}-${Math.random().toString(36).substring(7)}`
+      localStorage.setItem('backoffice-session-key', key)
+    }
+    return key
+  }
+  return 'backoffice-default'
+}
+
 const mockTasks: Task[] = [
   {
     id: '1',
@@ -76,15 +90,89 @@ const mockTasks: Task[] = [
 ]
 
 export default function Dashboard() {
-  const handleSendMessage = (content: string) => {
-    console.log('Send message:', content)
-    // TODO: Implement actual message sending
+  const [messages, setMessages] = useState<Message[]>(mockMessages)
+  const [isSending, setIsSending] = useState(false)
+  const sessionKey = getSessionKey()
+
+  const handleSendMessage = async (content: string) => {
+    // Add user message to UI immediately
+    const userMessage: Message = {
+      id: Date.now().toString(),
+      content,
+      sender: 'user',
+      timestamp: new Date().toISOString()
+    }
+    setMessages(prev => [...prev, userMessage])
+    setIsSending(true)
+
+    try {
+      // Send to OpenClaw gateway
+      const response = await fetch('/api/send-message', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sessionKey,
+          message: content
+        })
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to send message')
+      }
+
+      // The response will come asynchronously through polling or WebSocket
+      // For now, add a placeholder response
+      setTimeout(() => {
+        const aiMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          content: 'Message sent to Beast. Waiting for response...',
+          sender: 'ai',
+          timestamp: new Date().toISOString()
+        }
+        setMessages(prev => [...prev, aiMessage])
+      }, 500)
+
+    } catch (error) {
+      console.error('Error sending message:', error)
+      // Add error message
+      const errorMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        content: 'Error: Could not send message. Please check your connection.',
+        sender: 'ai',
+        timestamp: new Date().toISOString()
+      }
+      setMessages(prev => [...prev, errorMessage])
+    } finally {
+      setIsSending(false)
+    }
   }
 
   const handleFeedback = (messageId: string, feedback: 'up' | 'down') => {
     console.log('Feedback:', messageId, feedback)
     // TODO: Implement feedback storage
   }
+
+  // Poll for new messages periodically
+  useEffect(() => {
+    const pollInterval = setInterval(async () => {
+      try {
+        const response = await fetch(`/api/messages?sessionKey=${sessionKey}`)
+        if (response.ok) {
+          const newMessages = await response.json()
+          // Merge new messages with existing, avoiding duplicates
+          setMessages(prev => {
+            const existingIds = new Set(prev.map(m => m.id))
+            const uniqueNew = newMessages.filter((m: Message) => !existingIds.has(m.id))
+            return [...prev, ...uniqueNew]
+          })
+        }
+      } catch (error) {
+        // Silently fail on poll errors
+      }
+    }, 3000) // Poll every 3 seconds
+
+    return () => clearInterval(pollInterval)
+  }, [sessionKey])
 
   return (
     <div className="min-h-screen bg-background">
@@ -122,9 +210,10 @@ export default function Dashboard() {
 
           <TabsContent value="comms" className="space-y-6">
             <CommsCenter 
-              messages={mockMessages}
+              messages={messages}
               onSendMessage={handleSendMessage}
               onFeedback={handleFeedback}
+              isSending={isSending}
             />
           </TabsContent>
 
