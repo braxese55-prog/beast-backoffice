@@ -32,9 +32,9 @@ export async function GET(request: Request) {
     }
     const messages = history.map((msg: OpenClawMessage) => ({
       id: msg.timestamp?.toString() || Date.now().toString(),
-      content: msg.content,
+      content: msg.content || '',
       sender: msg.role === 'user' ? 'user' : 'ai',
-      timestamp: new Date(msg.timestamp).toISOString()
+      timestamp: new Date(msg.timestamp || Date.now()).toISOString()
     }))
 
     return NextResponse.json(messages)
