@@ -32,12 +32,13 @@ export async function GET() {
       lastHeartbeat: new Date().toISOString(),
       ...status
     })
-  } catch (error: any) {
+  } catch (error) {
     // Handle any unexpected errors gracefully
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
     return NextResponse.json({
       gateway: 'offline',
       error: 'Failed to fetch gateway status',
-      details: error.message || 'Unknown error',
+      details: errorMessage,
       timestamp: new Date().toISOString(),
       setupInstructions: 'To fix this on Vercel: 1) Install ngrok locally, 2) Run: ngrok http 18789, 3) Copy the HTTPS URL, 4) Set OPENCLAW_GATEWAY_URL environment variable in Vercel dashboard'
     }, { status: 503 })

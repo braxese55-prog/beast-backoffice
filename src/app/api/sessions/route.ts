@@ -5,8 +5,8 @@ import { getSessions, getSessionHistory, GatewayError } from '@/lib/openclaw'
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
-function isGatewayError(result: any): result is GatewayError {
-  return result && 'error' in result && 'details' in result
+function isGatewayError(result: unknown): result is GatewayError {
+  return typeof result === 'object' && result !== null && 'error' in result && 'details' in result
 }
 
 export async function GET() {
@@ -24,10 +24,11 @@ export async function GET() {
     }
     
     return NextResponse.json(sessions)
-  } catch (error: any) {
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
     return NextResponse.json({
       error: 'Failed to fetch sessions',
-      details: error.message || 'Unknown error',
+      details: errorMessage,
       timestamp: new Date().toISOString(),
       setupInstructions: 'To fix this on Vercel: 1) Install ngrok locally, 2) Run: ngrok http 18789, 3) Copy the HTTPS URL, 4) Set OPENCLAW_GATEWAY_URL environment variable in Vercel dashboard'
     }, { status: 503 })
@@ -54,10 +55,11 @@ export async function POST(request: Request) {
     }
     
     return NextResponse.json({ error: 'Invalid action' }, { status: 400 })
-  } catch (error: any) {
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
     return NextResponse.json({
       error: 'Failed to fetch session history',
-      details: error.message || 'Unknown error'
+      details: errorMessage
     }, { status: 500 })
   }
 }

@@ -51,12 +51,13 @@ export async function getSessions(): Promise<Session[] | GatewayError> {
     })
     if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`)
     return res.json()
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error fetching sessions:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Failed to connect to OpenClaw gateway'
     // Return error object instead of throwing
     return {
       error: 'Gateway Unreachable',
-      details: error.message || 'Failed to connect to OpenClaw gateway',
+      details: errorMessage,
       gatewayUrl: GATEWAY_URL,
       timestamp: new Date().toISOString()
     }
@@ -70,11 +71,12 @@ export async function getSessionHistory(sessionKey: string): Promise<Message[] |
     })
     if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`)
     return res.json()
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error fetching history:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Failed to connect to OpenClaw gateway'
     return {
       error: 'Gateway Unreachable',
-      details: error.message || 'Failed to connect to OpenClaw gateway',
+      details: errorMessage,
       gatewayUrl: GATEWAY_URL,
       timestamp: new Date().toISOString()
     }
@@ -101,11 +103,12 @@ export async function getGatewayStatus(): Promise<Record<string, unknown> | Gate
     })
     if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`)
     return res.json()
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error fetching status:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Failed to connect to OpenClaw gateway. If deploying to Vercel, you need to expose your local gateway via a tunnel (ngrok) and set OPENCLAW_GATEWAY_URL.'
     return {
       error: 'Gateway Unreachable',
-      details: error.message || 'Failed to connect to OpenClaw gateway. If deploying to Vercel, you need to expose your local gateway via a tunnel (ngrok) and set OPENCLAW_GATEWAY_URL.',
+      details: errorMessage,
       gatewayUrl: GATEWAY_URL,
       timestamp: new Date().toISOString()
     }
