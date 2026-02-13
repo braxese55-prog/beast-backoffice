@@ -25,7 +25,12 @@ export async function GET(request: Request) {
     }
 
     // At this point, result is Message[]
-    const history = result as any[]
+    interface OpenClawHistoryMessage {
+      timestamp?: number
+      content?: string
+      role?: string
+    }
+    const history = result as OpenClawHistoryMessage[]
 
     // Transform OpenClaw messages to our Message format
     interface OpenClawMessage {
