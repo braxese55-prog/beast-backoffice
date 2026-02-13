@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { getSessionHistory } from '@/lib/openclaw'
+import { getSessionHistory, GatewayError } from '@/lib/openclaw'
 
 export const dynamic = 'force-dynamic'
 
@@ -12,28 +12,34 @@ export async function GET(request: Request) {
   }
 
   try {
+    console.log(`Fetching history for session: ${sessionKey}`)
     const result = await getSessionHistory(sessionKey)
     
+    console.log('Result type:', typeof result)
+    console.log('Result is array:', Array.isArray(result))
+    
     // Check if we got an error response (GatewayError)
-    if (result && typeof result === 'object' && 'error' in result) {
+    if (!Array.isArray(result)) {
+      // It's a GatewayError
+      const errorResult = result as GatewayError
+      console.log('Gateway error:', errorResult)
       return NextResponse.json({
-        error: result.error,
-        details: result.details,
-        gatewayUrl: result.gatewayUrl,
-        timestamp: result.timestamp
+        error: errorResult.error,
+        details: errorResult.details,
+        gatewayUrl: errorResult.gatewayUrl,
+        timestamp: errorResult.timestamp
       }, { status: 503 })
     }
 
-    // At this point, result is Message[]
+    console.log(`Got ${result.length} messages from gateway`)
+
+    // Transform OpenClaw messages to our Message format
     interface OpenClawMessage {
       timestamp?: number
       content?: string
       role?: string
     }
-    const history = result as OpenClawMessage[]
-
-    // Transform OpenClaw messages to our Message format
-    const messages = history.map((msg: OpenClawMessage) => ({
+    const messages = result.map((msg: OpenClawMessage) => ({
       id: msg.timestamp?.toString() || Date.now().toString(),
       content: msg.content || '',
       sender: msg.role === 'user' ? 'user' : 'ai',
@@ -44,7 +50,7 @@ export async function GET(request: Request) {
   } catch (error) {
     console.error('Error fetching messages:', error)
     return NextResponse.json(
-      { error: 'Failed to fetch messages' },
+      { error: 'Failed to fetch messages', details: String(error) },
       { status: 500 }
     )
   }
